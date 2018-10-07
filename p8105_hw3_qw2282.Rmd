@@ -7,5 +7,78 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+devtools::install_github("p8105/p8105.datasets")
+library(p8105.datasets)
+
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_bw() + theme(legend.position = "bottom"))
+```
+
+```{r}
+data(brfss_smart2010)
+
+brfss_smart2010 = janitor::clean_names(brfss_smart2010) %>% 
+  filter(topic == "Overall Health") %>% #Focus on the overall health topic. 
+  mutate(response = forcats::fct_relevel(response, c("Excellent","Very good" , "Good", "Fair", "Poor")))
+
+#state observed in seven locations
+brfss_smart2010 %>% 
+  filter(year == 2002) %>% 
+  group_by(locationabbr, locationdesc) %>%
+  summarize(n = n()) %>% 
+  group_by(locationabbr) %>% 
+  summarize(n = n()) %>% 
+  filter(n == 7)  
+#States are CT, FL, NC
+
+num_observations = brfss_smart2010 %>% 
+  group_by(year, locationabbr) %>% 
+  summarize(n = n())
+
+#Make the sphaghetti plot
+ggplot(data = num_observations, aes(x = year, y = n, group = locationabbr)) + geom_line()
+
+summary_ny_excellent = brfss_smart2010 %>% 
+  group_by(locationabbr) %>% 
+  filter(locationabbr == "NY" & (year == 2002 | year == 2006 | year == 2010)) %>% 
+  select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
+  spread(key = response, value = data_value) %>% 
+  group_by(year) %>% 
+  summarize(mean_excellent = mean(Excellent),
+            sd_tmax = sd(Excellent))
+
+#################################################
+　b = brfss_smart2010 %>% 
+  group_by(year, locationabbr) %>% 
+  select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
+  spread(key = response, value = data_value) %>% 
+
+  summarize(mean_excellent = mean(Excellent),
+            mean_very_good = mean(`Very good`),
+            mean_good = mean(Good),
+            mean_fair = mean(Fair),
+            mean_poor = mean(Poor)) %>% 
+   gather(key = mean_value, value = mean_proportion, mean_excellent : mean_poor)
+
+
+ ggplot(b, aes(x = mean_proportion, fill = mean_value)) +
+  geom_density(alpha = .5) + 
+  facet_grid(~year) + 
+  viridis::scale_fill_viridis(discrete = TRUE)
+
+
+ggplot(b, aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) 
+
+
+
 ```
 
