@@ -92,10 +92,37 @@ This data set contains `r nrow(instacart)` and `r ncol(instacart)`.  Here is a l
 
 
 ```{r}
-
+instacart %>% 
+  group_by(aisle) %>% #134 aisles
+  summarize(n = n()) %>% 
+  mutate(order_ranking = min_rank(desc(n))) %>% 
+  filter(min_rank(desc(n)) < 2)  #Fresh Vegetables
 ```
 
+```{r}
+instacart %>%
+  ggplot( aes(x = aisle_id)) + 
+  geom_histogram() + 
+  labs(
+    title = "Aisle distribution plot",
+    x = "Aisle ID",
+    y = "Number of orders placed"
+  )
+```
 
+```{r}
+instacart %>% 
+  group_by(aisle, product_name) %>% 
+  filter(aisle == "baking ingredients" | aisle == "dog food care" | aisle == "packaged vegetables fruits") %>% 
+  count() %>%
+  group_by(aisle) %>% 
+  summarize(most_popular_item =  product_name[n == max(n)])
+
+
+
+  
+  
+```
 
 
 
