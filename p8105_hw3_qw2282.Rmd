@@ -55,6 +55,8 @@ summary_ny_excellent = brfss_smart2010 %>%
   summarize(mean_excellent = mean(Excellent),
             sd_tmax = sd(Excellent))
 
+summary_ny_excellent
+
 #################################################
 　b = brfss_smart2010 %>% 
   group_by(year, locationabbr) %>% 
@@ -66,7 +68,7 @@ summary_ny_excellent = brfss_smart2010 %>%
             mean_good = mean(Good),
             mean_fair = mean(Fair),
             mean_poor = mean(Poor)) %>% 
-   gather(key = mean_value, value = mean_proportion, mean_excellent : mean_poor)
+   gather(key = mean_value, value = mean_proportion, mean_excellent:mean_poor)
 
 
  ggplot(b, aes(x = mean_proportion, fill = mean_value)) +
@@ -119,11 +121,45 @@ instacart %>%
   summarize(most_popular_item =  product_name[n == max(n)])
 
 
-
+a = instacart %>% 
+  filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(mean_hour = mean(order_hour_of_day)) %>% 
+  spread(key = order_dow, value = mean_hour)
+  
   
   
 ```
 
 
 
+##Problem 3
+
+```{r}
+data(ny_noaa) 
+
+ny_data = ny_noaa %>% 
+  janitor::clean_names() %>% 
+  separate(date, into = c("Year", "Month", "Day"), sep = "-") %>% 
+  janitor::clean_names() 
+
+
+ny_data %>%  
+   group_by(snow) %>%
+  summarise(n= n()) %>% 
+  mutate(temp_ranking = min_rank(desc(n))) %>% 
+  filter(min_rank(desc(n)) < 2)  #0 is the most frequently observed value. 
+  
+  
+  
+  
+ny_jan_jul = ny_data %>% 
+  group_by(month) %>% 
+  filter(month == 11 | month == 1) %>%
+
+  summarize(mean_temp = tmax, na.rm = TRUE)
+  
+  
+
+```
 
