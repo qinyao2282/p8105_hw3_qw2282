@@ -73,7 +73,7 @@ summary_ny_excellent
 
 
 ```{r}
-　b = brfss_smart2010 %>% 
+　mean_response = brfss_smart2010 %>% 
   group_by(year, locationabbr) %>% 
   select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
   spread(key = response, value = data_value) %>% 
@@ -86,7 +86,7 @@ summary_ny_excellent
    gather(key = mean_value, value = mean_proportion, mean_excellent:mean_poor)
 
 
- ggplot(b, aes(x = mean_proportion, fill = mean_value)) +
+ ggplot(mean_response, aes(x = mean_proportion, fill = mean_value)) +
   geom_density(alpha = .5) + 
   facet_grid(~mean_value) + 
   viridis::scale_fill_viridis(discrete = TRUE)
@@ -134,14 +134,16 @@ instacart %>%
   count() %>%
   group_by(aisle) %>% 
   arrange(n) %>% 
-  filter(min_rank(desc(n)) < 2)
+  filter(min_rank(desc(n)) < 2) %>% 
+  knitr::kable()
 
 
-a = instacart %>% 
+time_order = instacart %>% 
   filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>% 
   group_by(product_name, order_dow) %>% 
   summarize(mean_hour = mean(order_hour_of_day)) %>% 
-  spread(key = order_dow, value = mean_hour)
+   spread(key = order_dow, value = mean_hour) %>%
+  knitr::kable()
   
   
   
@@ -181,6 +183,21 @@ ny_jan_jul = ny_data %>%
   facet_grid(~month) + 
   viridis::scale_fill_viridis(discrete = TRUE)
   
+
+```
+
+```{r}
+ny_noaa %>% 
+  mutate(tmax = as.numeric(tmax, na.rm = TRUE)) %>% 
+  mutate(tmin = as.numeric(tmin, na.rm = TRUE)) %>%
+ggplot(aes(x = tmax, y = tmin)) + 
+  geom_hex()
+
+
+ny_snow = ny_data %>% 
+  filter(snow >0, snow < 100) 
+  ggplot(ny_snow, aes(x = snow, fill = year)) +
+  geom_density(alpha = 0.2)
 
 ```
 
