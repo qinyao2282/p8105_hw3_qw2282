@@ -8,18 +8,21 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+#Instal the data
 devtools::install_github("p8105/p8105.datasets")
 library(p8105.datasets)
 
 library(tidyverse)
 
+#Make the output of figure in the same size. 
 knitr::opts_chunk$set(
   fig.width = 6,
   fig.asp = .6,
   out.width = "90%"
 )
 
-theme_set(theme_bw() + theme(legend.position = "bottom"))
+#Set the theme. 
+theme_set(theme_bw() + theme(legend.position = "right"))
 ```
 
 ```{r}
@@ -38,26 +41,38 @@ brfss_smart2010 %>%
   summarize(n = n()) %>% 
   filter(n == 7)  
 #States are CT, FL, NC
+```
 
-num_observations = brfss_smart2010 %>% 
-  group_by(year, locationabbr) %>% 
-  summarize(n = n())
+In 2002, CT, FL and NC are the states that observed at seven locations. This indicates that a lot of responses were observed in these three states complared to the others. 
+
+```{r}
 
 #Make the sphaghetti plot
-ggplot(data = num_observations, aes(x = year, y = n, group = locationabbr)) + geom_line()
+ggplot(data = num_observations, aes(x = year, y = n, color = locationabbr)) + geom_line() 
++ scale_color_hue(name = "Location", 
+                  h = c(100, 300))
+```
+The sphaghetti plot is shown with colored locations. 
 
+
+```{r}
 summary_ny_excellent = brfss_smart2010 %>% 
   group_by(locationabbr) %>% 
   filter(locationabbr == "NY" & (year == 2002 | year == 2006 | year == 2010)) %>% 
   select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
   spread(key = response, value = data_value) %>% 
-  group_by(year) %>% 
-  summarize(mean_excellent = mean(Excellent),
-            sd_tmax = sd(Excellent))
+  group_by(year) 
+  knitr::kable(summary_ny_excellent)
+  
 
 summary_ny_excellent
+```
 
-#################################################
+
+
+
+
+```{r}
 　b = brfss_smart2010 %>% 
   group_by(year, locationabbr) %>% 
   select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
@@ -73,7 +88,7 @@ summary_ny_excellent
 
  ggplot(b, aes(x = mean_proportion, fill = mean_value)) +
   geom_density(alpha = .5) + 
-  facet_grid(~year) + 
+  facet_grid(~mean_value) + 
   viridis::scale_fill_viridis(discrete = TRUE)
 
 
@@ -90,7 +105,7 @@ data(instacart)
 
 ```
 
-This data set contains `r nrow(instacart)` and `r ncol(instacart)`.  Here is a list of the variables in this data set `r colnames(instacart)`
+This data set contains `r nrow(instacart)` and `r ncol(instacart)`.  Here is a list of the variables in this data set `r colnames(instacart)`. Some key variables are product_name, aisle. 
 
 
 ```{r}
@@ -118,7 +133,8 @@ instacart %>%
   filter(aisle == "baking ingredients" | aisle == "dog food care" | aisle == "packaged vegetables fruits") %>% 
   count() %>%
   group_by(aisle) %>% 
-  summarize(most_popular_item =  product_name[n == max(n)])
+  arrange(n) %>% 
+  filter(min_rank(desc(n)) < 2)
 
 
 a = instacart %>% 
@@ -146,7 +162,7 @@ ny_data = ny_noaa %>%
 
 ny_data %>%  
    group_by(snow) %>%
-  summarise(n= n()) %>% 
+  summarise(n = n()) %>% 
   mutate(temp_ranking = min_rank(desc(n))) %>% 
   filter(min_rank(desc(n)) < 2)  #0 is the most frequently observed value. 
   
@@ -154,11 +170,16 @@ ny_data %>%
   
   
 ny_jan_jul = ny_data %>% 
-  group_by(month) %>% 
-  filter(month == 11 | month == 1) %>%
-
-  summarize(mean_temp = tmax, na.rm = TRUE)
-  
+  group_by(id, month) %>% 
+  mutate(tmax = as.numeric(tmax, na.rm = TRUE)) %>% 
+  mutate(tmin = as.numeric(tmin, na.rm = TRUE)) %>%
+  filter(month == "01" | month == "07") %>%
+  summarize(mean_tmax = mean((tmax + tmin)/2)) %>% 
+  na.omit(mean_tmax) 
+  ggplot(ny_jan_jul, aes( x = id, y = mean_tmax)) +
+  geom_point() + 
+  facet_grid(~month) + 
+  viridis::scale_fill_viridis(discrete = TRUE)
   
 
 ```
