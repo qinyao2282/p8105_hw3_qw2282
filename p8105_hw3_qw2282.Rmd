@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #Instal the data
 devtools::install_github("p8105/p8105.datasets")
 library(p8105.datasets)
-
+library(ggridges)
 library(tidyverse)
 
 #Make the output of figure in the same size. 
@@ -39,18 +39,21 @@ brfss_smart2010 %>%
   summarize(n = n()) %>% 
   group_by(locationabbr) %>% 
   summarize(n = n()) %>% 
-  filter(n == 7)  
+  filter(n == 7) %>% 
+  knitr::kable()
 #States are CT, FL, NC
 ```
 
 In 2002, CT, FL and NC are the states that observed at seven locations. This indicates that a lot of responses were observed in these three states complared to the others. 
 
 ```{r}
+num_observations = brfss_smart2010 %>% 
+  group_by(year, locationabbr) %>% 
+  summarize(n = n())
 
 #Make the sphaghetti plot
 ggplot(data = num_observations, aes(x = year, y = n, color = locationabbr)) + geom_line() 
-+ scale_color_hue(name = "Location", 
-                  h = c(100, 300))
+
 ```
 The sphaghetti plot is shown with colored locations. 
 
@@ -65,7 +68,6 @@ summary_ny_excellent = brfss_smart2010 %>%
   knitr::kable(summary_ny_excellent)
   
 
-summary_ny_excellent
 ```
 
 
@@ -158,26 +160,29 @@ data(ny_noaa)
 
 ny_data = ny_noaa %>% 
   janitor::clean_names() %>% 
+  rename(snow_in = snow, tmax_f = tmax, tmin_f = tmin, prcp_mm = prcp) %>% 
   separate(date, into = c("Year", "Month", "Day"), sep = "-") %>% 
   janitor::clean_names() 
 
 
 ny_data %>%  
-   group_by(snow) %>%
+   group_by(snow_in) %>%
   summarise(n = n()) %>% 
   mutate(temp_ranking = min_rank(desc(n))) %>% 
   filter(min_rank(desc(n)) < 2)  #0 is the most frequently observed value. 
+```  
+
+The most commonly observed value for snow fall is zero. This is because most of the time throughout the year, new york do not get any snow. As a result, a snow fall value of 0 mm will be observed most frequently. 
   
-  
-  
-  
+
+```{R}  
 ny_jan_jul = ny_data %>% 
   group_by(id, month) %>% 
-  mutate(tmax = as.numeric(tmax, na.rm = TRUE)) %>% 
-  mutate(tmin = as.numeric(tmin, na.rm = TRUE)) %>%
+  mutate(tmax_f = as.numeric(tmax_f, na.rm = TRUE)) %>% 
+  mutate(tmin_f = as.numeric(tmin_f, na.rm = TRUE)) %>%
   filter(month == "01" | month == "07") %>%
-  summarize(mean_tmax = mean((tmax + tmin)/2)) %>% 
-  na.omit(mean_tmax) 
+  summarize(mean_temp = mean((tmax_f + tmin_f)/2)) %>% 
+  na.omit(mean_temp) 
   ggplot(ny_jan_jul, aes( x = id, y = mean_tmax)) +
   geom_point() + 
   facet_grid(~month) + 
@@ -186,11 +191,17 @@ ny_jan_jul = ny_data %>%
 
 ```
 
+The observable structure of the pattern is that the temperature in all stations in January is near or under zero degrees, while the temperarture in all stations in july is over 20 degrees. There is no obvious outliers that can be observed. 
+
+
 ```{r}
-ny_noaa %>% 
-  mutate(tmax = as.numeric(tmax, na.rm = TRUE)) %>% 
-  mutate(tmin = as.numeric(tmin, na.rm = TRUE)) %>%
-ggplot(aes(x = tmax, y = tmin)) + 
+
+ny_data %>% 
+  na.omit(tmin_f) %>% 
+  na.omit(tmax_f) %>% 
+  mutate(tmax_f = as.numeric(tmax_f, na.rm = TRUE)) %>% 
+  mutate(tmin_f = as.numeric(tmin_f, na.rm = TRUE)) %>%
+ggplot(aes(x = tmin_f, y = tmax_f)) + 
   geom_hex()
 
 
