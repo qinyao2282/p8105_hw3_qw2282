@@ -10,9 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #Instal the data
 devtools::install_github("p8105/p8105.datasets")
+devtools::install_github("thomasp85/patchwork")
+
 library(p8105.datasets)
 library(ggridges)
 library(tidyverse)
+library(patchwork)
 
 #Make the output of figure in the same size. 
 knitr::opts_chunk$set(
@@ -52,17 +55,26 @@ num_observations = brfss_smart2010 %>%
   summarize(n = n())
 
 #Make the sphaghetti plot
-ggplot(data = num_observations, aes(x = year, y = n, color = locationabbr)) + geom_line() 
+ggplot(data = num_observations, aes(x = year, y = n, color = locationabbr)) + geom_line() + 
+  labs(
+    title = "observations in Each State",
+    x = "Years",
+    y = "Number of Observations"
+  )
 
 ```
 The sphaghetti plot is shown with colored locations. 
 
 
 ```{r}
+
+#Generate the summarize data for 2002, 2006, 2010
 summary_ny_excellent = brfss_smart2010 %>% 
   group_by(locationabbr) %>% 
   filter(locationabbr == "NY" & (year == 2002 | year == 2006 | year == 2010)) %>% 
   select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
+  
+  #Separate the keys to make the table readable. 
   spread(key = response, value = data_value) %>% 
   group_by(year) 
   knitr::kable(summary_ny_excellent)
@@ -75,23 +87,32 @@ summary_ny_excellent = brfss_smart2010 %>%
 
 
 ```{r}
-　mean_response = brfss_smart2010 %>% 
-  group_by(year, locationabbr) %>% 
+#calculate the mean proportion of each response at the state level in each year.
+mean_response = brfss_smart2010 %>% 
+  group_by(locationabbr, year, response) %>% 
   select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
-  spread(key = response, value = data_value) %>% 
 
-  summarize(mean_excellent = mean(Excellent),
-            mean_very_good = mean(`Very good`),
-            mean_good = mean(Good),
-            mean_fair = mean(Fair),
-            mean_poor = mean(Poor)) %>% 
-   gather(key = mean_value, value = mean_proportion, mean_excellent:mean_poor)
+  #Calculate the mean. 
+  summarize(average_response = mean(data_value, na.rm = TRUE)) 
 
 
- ggplot(mean_response, aes(x = mean_proportion, fill = mean_value)) +
-  geom_density(alpha = .5) + 
-  facet_grid(~mean_value) + 
-  viridis::scale_fill_viridis(discrete = TRUE)
+#Make the violin plot 
+ggplot(mean_response, aes(x = year, y = average_response)) +
+  geom_violin(aes(fill = factor(year)),  alpha = .5) + 
+  
+  #Split the panel with response
+  facet_grid(~response) + 
+  stat_summary(fun.y = median, geom = "point", color = "blue", size = 1) + 
+  viridis::scale_fill_viridis(discrete = TRUE) + 
+  
+  #Add the labels. 
+  labs(
+    title = "Distribution of Proportion of Response",
+    x = "Year",
+    y = "State Level Average of proportion"
+  )
+
+
 
 
 
@@ -102,8 +123,8 @@ summary_ny_excellent = brfss_smart2010 %>%
 ##Problem 2
 
 ```{r}
+#Read in the data
 data(instacart)
-
 
 ```
 
@@ -119,32 +140,45 @@ instacart %>%
 ```
 
 ```{r}
+
+
+################################
 instacart %>%
-  ggplot( aes(x = aisle_id)) + 
-  geom_histogram() + 
+  group_by(aisle_id) %>% 
+  summarize(n = n()) %>% 
+  ggplot( aes(x = aisle_id, y = n)) + 
+  geom_point() + 
   labs(
     title = "Aisle distribution plot",
     x = "Aisle ID",
     y = "Number of orders placed"
   )
+
+
 ```
 
+
 ```{r}
+
+#Find the most popular item. 
+
 instacart %>% 
   group_by(aisle, product_name) %>% 
   filter(aisle == "baking ingredients" | aisle == "dog food care" | aisle == "packaged vegetables fruits") %>% 
   count() %>%
   group_by(aisle) %>% 
-  arrange(n) %>% 
-  filter(min_rank(desc(n)) < 2) %>% 
+  filter(min_rank(desc(n)) < 2) %>% #Get the highest number and the corresponding product name. 
   knitr::kable()
 
 
+#Find the average order time in each day of the week. 
 time_order = instacart %>% 
-  filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>% 
-  group_by(product_name, order_dow) %>% 
+  filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>%  #Filter to get the products 
+  group_by(product_name, order_dow) %>%
+  
+  #calculate the mean hour. 
   summarize(mean_hour = mean(order_hour_of_day)) %>% 
-   spread(key = order_dow, value = mean_hour) %>%
+   spread(key = order_dow, value = mean_hour) %>% #Spread to make a table
   knitr::kable()
   
   
@@ -156,19 +190,21 @@ time_order = instacart %>%
 ##Problem 3
 
 ```{r}
+#Read the data set. 
 data(ny_noaa) 
 
+#Do some cleaning to the dataset. 
 ny_data = ny_noaa %>% 
   janitor::clean_names() %>% 
-  rename(snow_in = snow, tmax_f = tmax, tmin_f = tmin, prcp_mm = prcp) %>% 
-  separate(date, into = c("Year", "Month", "Day"), sep = "-") %>% 
-  janitor::clean_names() 
+  separate(date, into = c("Year", "Month", "Day"), sep = "-") %>% #Separate the date
+  janitor::clean_names() %>% 
+  rename(snow_in = snow, tmax_0.1_celcius = tmax, tmin_0.1_celcius = tmin, prcp_mm = prcp) #Rename some columns to add the appropriate units. 
 
 
-ny_data %>%  
-   group_by(snow_in) %>%
+ny_data %>% 
+  group_by(snow_in) %>%
   summarise(n = n()) %>% 
-  mutate(temp_ranking = min_rank(desc(n))) %>% 
+  mutate(temp_ranking = min_rank(desc(n))) %>% #Rank the numer of mm of snow. 
   filter(min_rank(desc(n)) < 2)  #0 is the most frequently observed value. 
 ```  
 
@@ -178,15 +214,19 @@ The most commonly observed value for snow fall is zero. This is because most of 
 ```{R}  
 ny_jan_jul = ny_data %>% 
   group_by(id, month) %>% 
-  mutate(tmax_f = as.numeric(tmax_f, na.rm = TRUE)) %>% 
-  mutate(tmin_f = as.numeric(tmin_f, na.rm = TRUE)) %>%
+  mutate(tmax_0.1_celcius = as.numeric(tmax_0.1_celcius, na.rm = TRUE)) %>% 
+  mutate(tmin_0.1_celcius = as.numeric(tmin_0.1_celcius, na.rm = TRUE)) %>%
   filter(month == "01" | month == "07") %>%
-  summarize(mean_temp = mean((tmax_f + tmin_f)/2)) %>% 
+  summarize(mean_temp = mean((tmax_0.1_celcius + tmin_0.1_celcius)/2)) %>% 
   na.omit(mean_temp) 
-  ggplot(ny_jan_jul, aes( x = id, y = mean_tmax)) +
+  ggplot(ny_jan_jul, aes( x = id, y = mean_temp)) +
   geom_point() + 
   facet_grid(~month) + 
-  viridis::scale_fill_viridis(discrete = TRUE)
+  labs(
+    title = "Average Temperature in Jan and Jul Across the Year",
+    x = "Stations",
+    y = "Temperature/ 0.1 Celcius"
+  )
   
 
 ```
@@ -195,20 +235,38 @@ The observable structure of the pattern is that the temperature in all stations 
 
 
 ```{r}
+library(patchwork)
 
-ny_data %>% 
-  na.omit(tmin_f) %>% 
-  na.omit(tmax_f) %>% 
-  mutate(tmax_f = as.numeric(tmax_f, na.rm = TRUE)) %>% 
-  mutate(tmin_f = as.numeric(tmin_f, na.rm = TRUE)) %>%
-ggplot(aes(x = tmin_f, y = tmax_f)) + 
-  geom_hex()
+figure_temp = ny_data %>% 
+  na.omit(tmin_0.1_celcius) %>% 
+  na.omit(tmax_0.1_celcius) %>% 
+  
+  #Change the numbers in temperature into numerics, remove the NA. 
+  mutate(tmax_0.1_celcius = as.numeric(tmax_0.1_celcius, na.rm = TRUE)) %>%
+  mutate(tmin_0.1_celcius = as.numeric(tmin_0.1_celcius, na.rm = TRUE)) %>%
+  
+  #Make the plot
+  ggplot(aes(x = tmin_0.1_celcius, y = tmax_0.1_celcius)) + 
+  geom_hex() +
+  theme(legend.position = "none") + 
+  labs(
+    title = "Tmax and Tmin for NY",
+    x = "Tmin/ 0.1 Celcius",
+    y = "Tmax/ 0.1 Celcius"
+  )
 
+#Plot a figure with snow between 0 and 100 mm. 
+figure_snow = ny_snow = ny_data %>% 
+  filter(snow_in > 0, snow_in < 100)  %>% 
+  ggplot(aes(x = snow_in, fill = year)) +
+  geom_density(alpha = 0.2) +
+  theme(legend.position = "none") +
+  labs(
+    title = "Snow Distribution bwtween 0 and 100 for NY",
+    x = "Snow/Inch"
+  )
 
-ny_snow = ny_data %>% 
-  filter(snow >0, snow < 100) 
-  ggplot(ny_snow, aes(x = snow, fill = year)) +
-  geom_density(alpha = 0.2)
-
+#Combine the two figures together. 
+figure_temp + figure_snow
 ```
 
