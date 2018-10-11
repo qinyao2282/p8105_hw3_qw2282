@@ -63,20 +63,21 @@ ggplot(data = num_observations, aes(x = year, y = n, color = locationabbr)) + ge
   )
 
 ```
-The sphaghetti plot is shown with colored locations. 
+
+The sphaghetti plot is shown with colored locations. From the plot, we can observe that most of the states have observations between zero and a hundred. And most of the states does not have large changes from 2002 to 2010. However, there are some outliers, such as FL, which has extremely high number of observations in 2007 and 2010. This might influence the mean and standard deviation. 
 
 
 ```{r}
 
 #Generate the summarize data for 2002, 2006, 2010
 summary_ny_excellent = brfss_smart2010 %>% 
-  group_by(locationabbr) %>% 
+  group_by(year) %>% 
   filter(locationabbr == "NY" & (year == 2002 | year == 2006 | year == 2010)) %>% 
   select(-c(topic, class, question, sample_size, confidence_limit_low:geo_location)) %>% 
-  
-  #Separate the keys to make the table readable. 
   spread(key = response, value = data_value) %>% 
-  group_by(year) 
+  summarize(mean_excellent = mean(Excellent),
+            sd_excellent = sd(Excellent))
+  
   knitr::kable(summary_ny_excellent)
   
 
@@ -112,13 +113,9 @@ ggplot(mean_response, aes(x = year, y = average_response)) +
     y = "State Level Average of proportion"
   )
 
-
-
-
-
 ```
 
-
+From the violin plot, we can observe that there are very little changes in the proportion of responses throughout the years from 2002 to 2010. The proportion for "Very Good" is always the highest while the proportion for "Poor" is always the lowest. The median has very slight changes that is hard to observe. 
 
 ##Problem 2
 
@@ -128,7 +125,8 @@ data(instacart)
 
 ```
 
-This data set contains `r nrow(instacart)` and `r ncol(instacart)`.  Here is a list of the variables in this data set `r colnames(instacart)`. Some key variables are product_name, aisle. 
+
+This data set contains `r nrow(instacart)` and `r ncol(instacart)`.  Here is a list of the variables in this data set `r colnames(instacart)`. This table is used to record the orders received throughout a week. The item names and the aisles, in addtion to the order information are also included. For example, the first line of the data represents the Bulgarian Yogurt, on aisle of Yougut in department of Dairy Eggs, is order on the fourth day of the week. Some key variables are order_number, order_dow, product_name, and aisle. This variables are important because this can help people to decide which day is important for getting certain product, and where this product can be found. 
 
 
 ```{r}
@@ -136,8 +134,12 @@ instacart %>%
   group_by(aisle) %>% #134 aisles
   summarize(n = n()) %>% 
   mutate(order_ranking = min_rank(desc(n))) %>% 
-  filter(min_rank(desc(n)) < 2)  #Fresh Vegetables
+  filter(min_rank(desc(n)) < 2) %>%  #Fresh Vegetables
+  knitr::kable()
+
 ```
+
+
 
 ```{r}
 
@@ -149,13 +151,15 @@ instacart %>%
   ggplot( aes(x = aisle_id, y = n)) + 
   geom_point() + 
   labs(
-    title = "Aisle distribution plot",
+    title = "Aisle Oder number distribution plot",
     x = "Aisle ID",
     y = "Number of orders placed"
   )
 
 
 ```
+
+This scatter plot shows the total number of order in each aisle. From the plot we can observe that there are several outliers in the plot,\ which indicates this aisles have extremely high order numbers. And the other ones has much fewer orders.
 
 
 ```{r}
@@ -215,9 +219,8 @@ The most commonly observed value for snow fall is zero. This is because most of 
 ny_jan_jul = ny_data %>% 
   group_by(id, month) %>% 
   mutate(tmax_0.1_celcius = as.numeric(tmax_0.1_celcius, na.rm = TRUE)) %>% 
-  mutate(tmin_0.1_celcius = as.numeric(tmin_0.1_celcius, na.rm = TRUE)) %>%
   filter(month == "01" | month == "07") %>%
-  summarize(mean_temp = mean((tmax_0.1_celcius + tmin_0.1_celcius)/2)) %>% 
+  summarize(mean_temp = mean(tmax_0.1_celcius)) %>% 
   na.omit(mean_temp) 
   ggplot(ny_jan_jul, aes( x = id, y = mean_temp)) +
   geom_point() + 
