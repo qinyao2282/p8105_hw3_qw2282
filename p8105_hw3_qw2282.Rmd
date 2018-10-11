@@ -176,7 +176,7 @@ instacart %>%
 
 
 #Find the average order time in each day of the week. 
-time_order = instacart %>% 
+instacart %>% 
   filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>%  #Filter to get the products 
   group_by(product_name, order_dow) %>%
   
@@ -222,6 +222,7 @@ ny_jan_jul = ny_data %>%
   filter(month == "01" | month == "07") %>%
   summarize(mean_temp = mean(tmax_0.1_celcius)) %>% 
   na.omit(mean_temp) 
+
   ggplot(ny_jan_jul, aes( x = id, y = mean_temp)) +
   geom_point() + 
   facet_grid(~month) + 
@@ -230,7 +231,10 @@ ny_jan_jul = ny_data %>%
     x = "Stations",
     y = "Temperature/ 0.1 Celcius"
   )
-  
+ 
+  ggplot(ny_jan_jul, aes(x = factor(month), y = mean_temp)) +
+    geom_boxplot()
+ 
 
 ```
 
@@ -251,7 +255,7 @@ figure_temp = ny_data %>%
   #Make the plot
   ggplot(aes(x = tmin_0.1_celcius, y = tmax_0.1_celcius)) + 
   geom_hex() +
-  theme(legend.position = "none") + 
+
   labs(
     title = "Tmax and Tmin for NY",
     x = "Tmin/ 0.1 Celcius",
@@ -263,7 +267,7 @@ figure_snow = ny_snow = ny_data %>%
   filter(snow_in > 0, snow_in < 100)  %>% 
   ggplot(aes(x = snow_in, fill = year)) +
   geom_density(alpha = 0.2) +
-  theme(legend.position = "none") +
+
   labs(
     title = "Snow Distribution bwtween 0 and 100 for NY",
     x = "Snow/Inch"
@@ -272,4 +276,9 @@ figure_snow = ny_snow = ny_data %>%
 #Combine the two figures together. 
 figure_temp + figure_snow
 ```
+
+From these teo plots, we first notice that 
+
+
+
 
