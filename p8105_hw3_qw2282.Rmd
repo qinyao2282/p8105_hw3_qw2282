@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
   fig.width = 6,
   fig.asp = .6,
   out.width = "90%"
-)
+  )
 
 #Set the theme. 
 theme_set(theme_bw() + theme(legend.position = "right"))
@@ -156,11 +156,15 @@ There are a total of 134 aisles and most items are ordered from the aisle of fre
 ```{r}
 
 #Plot the number of orders in each aisle. 
+
 instacart %>%
-  group_by(aisle_id) %>% 
+  group_by(aisle) %>% 
   summarize(n = n()) %>% 
-  ggplot( aes(x = aisle_id, y = n)) + 
-  geom_point() + 
+  mutate(aisle = forcats::fct_reorder(factor(aisle), n, .desc = F)) %>% 
+  ggplot(aes(x = aisle, y = n)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme(text = element_text(size = 6)) + 
   labs(
     title = "Aisle Oder number distribution plot",
     x = "Aisle ID",
@@ -169,9 +173,9 @@ instacart %>%
 
 
 ```
-Comment on the scatter plot: 
+Comment on the bar plot and the bar plot: 
 
-I choose to use scatter plot to show the order distribution because this can clearly show both the extremely high values and the overall distribution. This scatter plot shows the total number of order in each aisle. From the plot we can observe that there are several outliers in the plot, which indicates this aisles have extremely high order numbers. And the other ones has much fewer orders, usually around 0 to 50000. 
+I choose to use bar plot to show the order distribution because this can clearly show both the extremely high values and the overall distribution in a decresing order. This plot shows the total number of order in each aisle. From the plot we can observe that there are several extreme values at the top, which indicates the fresh vagetables and fruits have extremely high order numbers. And the other ones has much fewer orders, usually around 0 to 50000. 
 
 
 ```{r}
@@ -246,8 +250,8 @@ ny_jan_jul = ny_data %>%
   group_by(id, month) %>% 
   mutate(tmax_0.1_celcius = as.numeric(tmax_0.1_celcius, na.rm = TRUE)) %>% 
   filter(month == "01" | month == "07") %>%
-  summarize(mean_temp = mean(tmax_0.1_celcius)) %>% 
-  na.omit(mean_temp) 
+  na.omit(tmax_0.1_celcius) %>% 
+  summarize(mean_temp = mean(tmax_0.1_celcius)) 
 
 #Make the plot. 
   ggplot(ny_jan_jul, aes( x = id, y = mean_temp)) +
@@ -259,7 +263,7 @@ ny_jan_jul = ny_data %>%
     y = "Temperature/ 0.1 Celcius"
   )
  
-  #Make an additional 
+  #Make an additional plot
   ggplot(ny_jan_jul, aes(y = mean_temp)) +
     geom_boxplot() +
     facet_grid(~month) +
