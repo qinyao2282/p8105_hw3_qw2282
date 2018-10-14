@@ -163,8 +163,6 @@ instacart %>%
   mutate(aisle = forcats::fct_reorder(factor(aisle), n, .desc = F)) %>% 
   ggplot(aes(x = aisle, y = n)) +
   geom_point() +
- # geom_bar(stat = "identity") +
- # coord_flip() +
   theme(text = element_text(size = 6), axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(
     title = "Aisle Oder number distribution plot",
